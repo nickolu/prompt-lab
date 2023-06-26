@@ -27,7 +27,9 @@ function TestRunForm({
                 label="Name"
                 required
             />
-            <Button type="submit">Create Test Run</Button>
+            <Button type="submit" variant="outlined">
+                Create Test
+            </Button>
         </Box>
     );
 }

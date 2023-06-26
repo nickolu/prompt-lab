@@ -1,9 +1,30 @@
-import TestRun from "@/entities/TestRun";
-import TestVariant, { MessageType } from "@/entities/TestVariant";
+import { MessageType } from "@/entities/Message";
+import TestVariant from "@/entities/TestVariant";
 import axios from "axios";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 
 export default function useTestVariants() {
+    const [variants, setVariants] = useState<TestVariant[]>([]);
+    function _addVariantToState(variant: TestVariant) {
+        if (variant) {
+            setVariants([...variants, variant]);
+        }
+    }
+
+    function _updateVariantInState(variant: TestVariant) {
+        setVariants((prevVariants) => {
+            if (prevVariants) {
+                return prevVariants.map((prevVariant) => {
+                    if (prevVariant.id === variant.id) {
+                        return variant;
+                    }
+                    return prevVariant;
+                });
+            }
+            return [];
+        });
+    }
+
     const getVariantsByTestRunId = useCallback(
         async ({
             testRunId,
@@ -11,7 +32,7 @@ export default function useTestVariants() {
             testRunId: string;
         }): Promise<TestVariant[]> => {
             const response = await axios.get(`/api/testVariants/${testRunId}`);
-            console.log(response.data);
+            console.log("response.data", response.data);
             return response.data.map(
                 (testVariant: any) => new TestVariant(testVariant)
             );
@@ -31,6 +52,12 @@ export default function useTestVariants() {
             temperature: number;
             description?: string;
         }) => {
+            console.log({
+                testRunId,
+                model,
+                temperature,
+                description,
+            });
             const response = await axios.post("/api/testVariants", {
                 testRunId,
                 model,
@@ -38,7 +65,9 @@ export default function useTestVariants() {
                 description,
             });
 
-            return new TestVariant({
+            console.log(response.data);
+
+            const variant = new TestVariant({
                 description,
                 testRunId,
                 model,
@@ -46,6 +75,7 @@ export default function useTestVariants() {
                 messages: [],
                 id: response.data.id,
             });
+            setVariants((prevVariants) => [...prevVariants, variant]);
         },
         []
     );
@@ -59,14 +89,22 @@ export default function useTestVariants() {
             message: { text: string; type: MessageType };
         }) => {
             const response = await axios.post(
-                `/api/testVariants/${testVariantId}/messages`,
-                { message }
+                `/api/testVariant/${testVariantId}/messages`,
+                message
             );
-            console.log(response.data);
-            return new TestVariant(response.data);
+            console.log("addMessageToTestVariant", response.data);
+            const variant = new TestVariant(response.data);
+            console.log("new variant", variant);
+            _updateVariantInState(variant);
         },
         []
     );
 
-    return { getVariantsByTestRunId, addTestVariant, addMessageToTestVariant };
+    return {
+        getVariantsByTestRunId,
+        addTestVariant,
+        addMessageToTestVariant,
+        variants,
+        setVariants,
+    };
 }

@@ -1,26 +1,25 @@
+import AddMessageForm from "@/components/AddMessageForm";
+import PageTemplate from "@/components/PageTemplate";
 import TestVariantForm, {
     TestVariantFormProps,
 } from "@/components/TestVariantForm";
+import { Message, MessageType } from "@/entities/Message";
 import TestRun from "@/entities/TestRun";
 import TestVariant, { TestVariantProps } from "@/entities/TestVariant";
 import useTestRuns from "@/hooks/useTestRuns";
 import useTestVariants from "@/hooks/useTestVariants";
 import { Box, Typography } from "@mui/material";
-import {
-    AIChatMessage,
-    BaseChatMessage,
-    HumanChatMessage,
-    SystemChatMessage,
-} from "langchain/schema";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
+
+type ChatMessageInput = Partial<Message>;
 
 const ChatMessage = ({
     prefix,
     message,
 }: {
     prefix: JSX.Element;
-    message: BaseChatMessage;
+    message: ChatMessageInput;
 }) => {
     return (
         <Box display={"flex"}>
@@ -28,7 +27,8 @@ const ChatMessage = ({
         </Box>
     );
 };
-const SystemMessage = ({ message }: { message: BaseChatMessage }) => {
+
+const SystemMessage = ({ message }: { message: ChatMessageInput }) => {
     return (
         <ChatMessage
             prefix={<Typography>System:</Typography>}
@@ -36,12 +36,12 @@ const SystemMessage = ({ message }: { message: BaseChatMessage }) => {
         />
     );
 };
-const AiMessage = ({ message }: { message: BaseChatMessage }) => {
+const AiMessage = ({ message }: { message: ChatMessageInput }) => {
     return (
         <ChatMessage prefix={<Typography>Ai:</Typography>} message={message} />
     );
 };
-const HumanMessage = ({ message }: { message: BaseChatMessage }) => {
+const HumanMessage = ({ message }: { message: ChatMessageInput }) => {
     return (
         <ChatMessage
             prefix={<Typography>Human:</Typography>}
@@ -50,14 +50,14 @@ const HumanMessage = ({ message }: { message: BaseChatMessage }) => {
     );
 };
 
-const MessageComponent = ({ message }: { message: BaseChatMessage }) => {
-    if (message instanceof SystemChatMessage) {
+const MessageComponent = ({ message }: { message: Message }) => {
+    if (message.type === MessageType.SYSTEM) {
         return <SystemMessage message={message} />;
     }
-    if (message instanceof AIChatMessage) {
+    if (message.type === MessageType.AI) {
         return <AiMessage message={message} />;
     }
-    if (message instanceof HumanChatMessage) {
+    if (message.type === MessageType.HUMAN) {
         return <HumanMessage message={message} />;
     }
     return <Box>unknown message type</Box>;
@@ -66,13 +66,21 @@ const MessageComponent = ({ message }: { message: BaseChatMessage }) => {
 export default function TestRunPage() {
     const { query } = useRouter();
     const { getTestRunById } = useTestRuns();
-    const { getVariantsByTestRunId, addTestVariant, addMessageToTestVariant } =
-        useTestVariants();
+    const {
+        variants,
+        setVariants,
+        getVariantsByTestRunId,
+        addTestVariant,
+        addMessageToTestVariant,
+    } = useTestVariants();
+
     const [testRun, setTestRun] = useState<TestRun | null>(null);
-    const [variants, setVariants] = useState<TestVariant[] | null>(null);
 
     useEffect(() => {
         async function fetchTestRun() {
+            if (!query?.id) {
+                return;
+            }
             const testRun = await getTestRunById(query.id as string);
             setTestRun(testRun);
         }
@@ -81,25 +89,28 @@ export default function TestRunPage() {
 
     useEffect(() => {
         async function fetchVariants() {
+            if (!query?.id) {
+                return;
+            }
             const variants = await getVariantsByTestRunId({
                 testRunId: query.id as string,
             });
             setVariants(variants);
         }
         fetchVariants();
-    }, [testRun, getVariantsByTestRunId, query.id]);
+    }, [testRun, getVariantsByTestRunId, query.id, setVariants]);
 
     if (!testRun || !variants) {
         return "loading";
     }
 
     return (
-        <>
+        <PageTemplate>
             <Box>
-                <Typography variant="h1">Test Run {testRun.name}</Typography>
+                <Typography variant="h2">{testRun.name}</Typography>
                 {variants.map((variant: TestVariant) => (
                     <Box key={variant.id}>
-                        <Typography variant="h2">
+                        <Typography variant="h3">
                             Variant {variant.id}
                         </Typography>
                         <Typography>
@@ -109,7 +120,7 @@ export default function TestRunPage() {
                         {variant.messages.map((message) => {
                             return (
                                 <MessageComponent
-                                    key={message.text}
+                                    key={message.id}
                                     message={message}
                                 />
                             );
@@ -119,23 +130,44 @@ export default function TestRunPage() {
                                 display="flex"
                                 sx={{ border: "1px solid green" }}
                             >
-                                <Typography>Ai: </Typography>
-                                <Typography>{variant.result}</Typography>
+                                <AiMessage
+                                    message={{
+                                        text: variant.result,
+                                    }}
+                                />
                             </Box>
                         )}
+                        <AddMessageForm
+                            onSubmit={async ({
+                                text,
+                                type,
+                            }: {
+                                text: string;
+                                type: string;
+                            }) => {
+                                const newMessage =
+                                    await addMessageToTestVariant({
+                                        testVariantId: variant.id,
+                                        message: {
+                                            text,
+                                            type: type as MessageType,
+                                        },
+                                    });
+                            }}
+                        />
                     </Box>
                 ))}
             </Box>
-            <Typography variant="h2">Add a new variant</Typography>
+            <Typography variant="h3">Add a new variant</Typography>
             <TestVariantForm
                 onSubmit={async ({
                     temperature,
                     model,
                     description,
                 }: {
-                    temperature: TestVariantProps["temperature"];
-                    model: TestVariantProps["model"];
-                    description: TestVariantProps["description"];
+                    temperature: number;
+                    model: string;
+                    description: string;
                 }) => {
                     const newVariant = await addTestVariant({
                         testRunId: testRun.id,
@@ -143,9 +175,8 @@ export default function TestRunPage() {
                         temperature,
                         description,
                     });
-                    setVariants([...variants, newVariant]);
                 }}
             />
-        </>
+        </PageTemplate>
     );
 }

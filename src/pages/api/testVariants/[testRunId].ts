@@ -27,10 +27,13 @@ export default async function handler(
 
             let testVariants: any[] = [];
             snapshot.forEach((doc) => {
+                console.log("snapshot", doc.data());
                 let variantData = doc.data();
                 variantData.id = doc.id; // Include the doc ID in the data
                 testVariants.push(variantData);
             });
+
+            console.log("test variants", testVariants);
 
             // const testVariants = [
             //     {

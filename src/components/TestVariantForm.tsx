@@ -45,8 +45,8 @@ function TestVariantForm({
             <TextField
                 value={_description}
                 onChange={(event: any) => setDescription(event.target.value)}
-                name="name"
-                label="Name"
+                name="description"
+                label="Description"
                 required
             />
             <TextField
@@ -66,7 +66,7 @@ function TestVariantForm({
                 required
             />
 
-            <Button type="submit">Create Test Variant</Button>
+            <Button type="submit">Create Variant</Button>
         </Box>
     );
 }

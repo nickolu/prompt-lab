@@ -11,13 +11,17 @@ export default async function handler(
 
     try {
         if (req.method === "GET") {
-            console.log("getting test variants");
-            const snapshot = await db.collection("testVariants").get();
-            const testRuns = snapshot.docs.map((doc) => ({
-                id: doc.id,
-                ...doc.data(),
-            }));
-            // const testRuns = [
+            // console.log("getting test variants");
+            // const snapshot = await db.collection("testVariants").get();
+            // const testVariants = snapshot.docs.map((doc) => {
+            //     console.log("doc", doc);
+            //     console.log("messages", doc.data().messages);
+            //     return {
+            //         id: doc.id,
+            //         ...doc.data(),
+            //     };
+            // });
+            // const testVariants = [
             //     {
             //         id: "0001",
             //         name: "Test Run 1",
@@ -31,9 +35,9 @@ export default async function handler(
             //         name: "Test Run 3",
             //     },
             // ];
-            res.status(200).json(testRuns);
+            return res.status(404).send("Get not implemented");
         } else if (req.method === "POST") {
-            console.log("creating test run");
+            console.log("creating variant", req.body);
             const docRef = await db.collection("testVariants").add(req.body);
             const newDoc = await docRef.get();
             return res.status(200).json({ id: newDoc.id, ...newDoc.data() });

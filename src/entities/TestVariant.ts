@@ -5,16 +5,8 @@ import {
     SystemChatMessage,
 } from "langchain/schema";
 
-export enum MessageType {
-    AI = "ai",
-    Human = "human",
-    System = "system",
-}
-
-type TestVariantMessageInput = {
-    text: string;
-    type: MessageType;
-};
+import { v4 as uuidv4 } from "uuid";
+import { Message } from "./Message";
 
 export type TestVariantProps = {
     id: string;
@@ -23,7 +15,7 @@ export type TestVariantProps = {
     description?: string;
     result?: string;
     testRunId: string;
-    messages: TestVariantMessageInput[];
+    messages: Message[];
 };
 
 export default class TestVariant {
@@ -31,7 +23,7 @@ export default class TestVariant {
     temperature: number;
     model: string;
     description: string;
-    messages: BaseChatMessage[] = [];
+    messages: Message[] = [];
     result: string;
     testRunId: string;
 
@@ -44,17 +36,21 @@ export default class TestVariant {
         testRunId,
         result = "",
     }: TestVariantProps) {
-        this.id = id;
+        this.id = id ?? uuidv4();
         this.temperature = temperature;
         this.model = model;
         this.description = description;
         this.result = result;
         this.testRunId = testRunId;
-        this.messages = messageInputsToChatMessages(messages);
+        this.messages = messages;
     }
 }
 
-function messageInputsToChatMessages(inputs: TestVariantMessageInput[]) {
+function messageInputsToChatMessages(inputs: Message[]) {
+    if (!inputs) {
+        return [];
+    }
+    console.log(inputs);
     return inputs.map((message) => {
         if (message.type === "ai") {
             return new AIChatMessage(message.text);
@@ -63,6 +59,7 @@ function messageInputsToChatMessages(inputs: TestVariantMessageInput[]) {
         } else if (message.type === "system") {
             return new SystemChatMessage(message.text);
         } else {
+            console.log(message);
             throw new Error(`Unknown message type: ${message.type}`);
         }
     });

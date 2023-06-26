@@ -28,7 +28,7 @@ export default async function handler(
                 return;
             }
 
-            res.status(200).json(testRun);
+            res.status(200).json({ ...testRun, id });
         } else {
             // Handle any other HTTP method
             res.setHeader("Allow", ["GET"]);

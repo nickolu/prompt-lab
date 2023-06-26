@@ -9,7 +9,8 @@ export default function useTestRuns() {
     const addTestRun = useCallback(async ({ name }: { name: string }) => {
         const response = await axios.post("/api/testRuns", { name });
         console.log(response.data);
-        return new TestRun({ name, id: response.data.id });
+        const testRun = new TestRun({ name, id: response.data.id });
+        setTestRuns((prevTestRuns) => [...prevTestRuns, testRun]);
     }, []);
 
     const getAllTestRuns = useCallback(async () => {
@@ -18,7 +19,9 @@ export default function useTestRuns() {
     }, []);
 
     const getTestRunById = useCallback(async (id: string) => {
+        if (!id) throw new Error("id is required");
         const response = await axios.get(`/api/testRuns/${id}`);
+        console.log(response.data);
         return new TestRun(response.data);
     }, []);
 

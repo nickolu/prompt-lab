@@ -1,21 +1,25 @@
 import TestRunForm from "@/components/TestRunForm";
 import Link from "next/link";
 import useTestRuns from "@/hooks/useTestRuns";
+import { Box, Typography } from "@mui/material";
+import PageTemplate from "@/components/PageTemplate";
 
 function TestRunsPage() {
     const { testRuns, addTestRun } = useTestRuns();
 
     return (
-        <div>
-            <h1>Create a New Test Run</h1>
+        <PageTemplate>
+            <Typography variant="h2">Create a New Test</Typography>
             <TestRunForm onSubmit={addTestRun} />
-            <h2>Your Test Runs</h2>
+            <Typography variant="h3">Your Tests</Typography>
             {testRuns.map((testRun) => (
-                <div key={testRun.id}>
-                    <Link href={`test-runs/${testRun.id}`}>{testRun.name}</Link>
-                </div>
+                <Box key={testRun.id}>
+                    <Link href={`test-runs/${testRun.id}`}>
+                        <Typography>{testRun.name}</Typography>
+                    </Link>
+                </Box>
             ))}
-        </div>
+        </PageTemplate>
     );
 }
 
